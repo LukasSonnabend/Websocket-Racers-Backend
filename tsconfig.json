@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES6",                          /* Set the JavaScript version you want to compile down to */
+    "module": "CommonJS",                     /* Module code generation */
+    "rootDir": "./src",                       /* Source root directory */
+    "outDir": "./dist",                       /* Output directory for compiled files */
+    "strict": false,                           /* Enable all strict type-checking options */
+    "esModuleInterop": true,                  /* Allows default imports from modules with no default export */
+    "skipLibCheck": true                      /* Skip type checking of declaration files */
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
