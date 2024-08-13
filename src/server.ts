@@ -15,6 +15,8 @@ const server = http.createServer(app);
 
 // Attach WebSocket server to the HTTP server
 const wss = new WebSocketServer({ server });
+// make server 0.0.0.0
+
 
 let host: WebSocket | null = null;
 const clients: Map<string, WebSocket> = new Map(); // Map to store clients with their IDs
@@ -40,14 +42,21 @@ wss.on('connection', (ws: WebSocket) => {
 
         switch (parsedMessage.type) {
             case 'register':
+                console.log(`Received message from client ${clientId}:`, parsedMessage);
                 handleRegister(ws, parsedMessage, clientId);
                 break;
             case 'message':
+                console.log(`Received message from client ${clientId}:`, parsedMessage);
                 handleMessage(ws, parsedMessage);
                 break;
             case 'ready':
+                console.log(`Received message from client ${clientId}:`, parsedMessage);
                 handleReady(ws, parsedMessage);
                 break;
+            case 'controls':
+                handleControls(ws, parsedMessage);
+                break;
+            
             default:
                 console.log('Unknown message type:', parsedMessage.type);
         }
@@ -102,13 +111,52 @@ function handleMessage(ws: WebSocket, message: any) {
 function handleReady(ws: WebSocket, message: { type: 'ready', value: { playerName: string } }) {
     console.log('Player ready:', message.value.playerName);
     // Notify the host about the player ready event
-    if (host && host.readyState === WebSocket.OPEN) {
-        host.send(JSON.stringify({ type: 'player_ready', message: 'A player is ready', data: message.value }));
+    const clientId = getClientId(ws);
+    if (clientId) {
+        if (host && host.readyState === WebSocket.OPEN) {
+            const readyMessage: ClientMessage = {
+                type: 'player_ready',
+                message: 'A player is ready',
+                data: { clientId, playerName: message.value.playerName, ready: true }
+            };
+            host.send(JSON.stringify(readyMessage));
+        }
+    } else {
+        console.error('Client ID not found for WebSocket connection');
     }
+}
+
+// Helper function to get client ID from WebSocket
+function getClientId(ws: WebSocket): string | undefined {
+    for (const [clientId, clientWs] of clients.entries()) {
+        if (clientWs === ws) {
+            return clientId;
+        }
+    }
+    return undefined;
 }
 
 // Start the server
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
-    console.log(`Server is listening on port ${PORT}`);
+server.listen(8080, '0.0.0.0', () => {
+    console.log(`Server is listening on http://0.0.0.0:${PORT}`);
 });
+
+function handleControls(ws: WebSocket, parsedMessage: any) {
+    // send the user controls to the host
+    const clientId = getClientId(ws);
+    if (clientId) {
+      //  if (host && host.readyState === WebSocket.OPEN) {
+            const controlsMessage: ClientMessage = {
+                type: 'player_controls',
+                message: 'Player controls',
+                data: { clientId, ...parsedMessage.value }
+            };
+            host.send(JSON.stringify(controlsMessage));
+        }
+  //  } else {
+    //    console.error('Client ID not found for WebSocket connection');
+   // }
+
+
+}
